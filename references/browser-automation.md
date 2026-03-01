@@ -5,16 +5,17 @@ Use Camoufox (anti-detect Firefox) for all job application browser automation.
 
 ## Setup
 
+- **Bundled script:** `scripts/camoufox_browser.py` (included in this skill)
 - **venv:** `~/.openclaw/workspace/.venv`
-- **script:** `~/.openclaw/workspace/scripts/camoufox_browser.py`
-- **activate:** `source ~/.openclaw/workspace/.venv/bin/activate`
+- **Credentials:** See `references/credentials.md` for all required env vars
 
 ## How to Call It (via exec tool)
 
-Always prefix commands with the venv activation:
+Always prefix commands with the venv activation and run from the workspace root:
 
 ```bash
-cd ~/.openclaw/workspace && source .venv/bin/activate && python3 scripts/camoufox_browser.py <command> [options]
+cd ~/.openclaw/workspace && source .venv/bin/activate && \
+python3 skills/job-finder/scripts/camoufox_browser.py <command> [options]
 ```
 
 ## Commands

@@ -39,7 +39,7 @@ and bypasses these protections reliably.
 source ~/.openclaw/workspace/.venv/bin/activate
 
 # Camoufox runner
-python3 ~/.openclaw/workspace/scripts/camoufox_browser.py <command>
+python3 scripts/camoufox_browser.py <command>
 
 # Full reference
 cat ~/.openclaw/workspace/skills/job-finder/references/browser-automation.md
