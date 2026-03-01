@@ -88,8 +88,7 @@ If all paths fail → Email candidate "Match" + apply link
   ```
 - **`gotta-captcha` skill** — installed at `skills/gotta-captcha/`
 - **`im-accounted-for` skill** — installed at `skills/account-creator/`
-- **SMTP credentials** for sending emails (configured in `TOOLS.md` or env vars)
-- **IMAP credentials** for `im-accounted-for` account verification (same email, env vars `IMAP_EMAIL` / `IMAP_PASS`)
+- **Credentials** — SMTP (email sending) and IMAP (account verification). See `references/credentials.md` for the full variable list and setup instructions — that is the single source of truth; do not configure credentials from README examples.
 - **API keys** (optional) — Adzuna and USAJobs expand search coverage but aren't required
 
 ---
@@ -136,6 +135,7 @@ When a CAPTCHA appears, you'll see a handoff banner in the TUI and a browser win
 
 | File | Purpose |
 |------|---------|
+| `references/credentials.md` | **Single source of truth** for all env vars — SMTP, IMAP, storage paths |
 | `references/browser-automation.md` | Camoufox CLI usage, CAPTCHA handling, login wall handling |
 | `references/email-sending.md` | SMTP email sending instructions |
 | `references/job-apis.md` | Job board API integration details |
