@@ -16,6 +16,40 @@ description: >
 End-to-end job search and application agent. Takes candidate information, finds matching jobs,
 tailors resumes, generates cover letters, applies when possible, and emails the candidate.
 
+## Browser Stack — Mandatory Reading
+
+**Always use Camoufox for every browser interaction in this skill. No exceptions.**
+
+The built-in `browser` tool uses Chromium and is fingerprinted as a bot by most modern job
+sites — resulting in blocked page loads, invisible form fields, broken uploads, and silent
+submission failures. Camoufox presents as a real, human Firefox browser at the C++ level
+and bypasses these protections reliably.
+
+| Tool | Use for |
+|------|---------|
+| ✅ Camoufox (`camoufox_browser.py`) | All job site navigation, form filling, file uploads, DOM inspection |
+| ✅ `gotta-captcha` skill | Any CAPTCHA encountered during apply or account creation |
+| ✅ `im-accounted-for` skill | Any login wall requiring account registration before applying |
+| ❌ Built-in `browser` tool | **Never** — flagged as bot on all major job sites |
+| ❌ `web_fetch` for apply flows | **Never** — cannot execute JS or maintain session state |
+
+**Setup (must be in place before any apply step):**
+```bash
+# venv
+source ~/.openclaw/workspace/.venv/bin/activate
+
+# Camoufox runner
+python3 ~/.openclaw/workspace/scripts/camoufox_browser.py <command>
+
+# Full reference
+cat ~/.openclaw/workspace/skills/job-finder/references/browser-automation.md
+```
+
+If the venv or Camoufox binary is missing, stop and install before proceeding:
+```bash
+pip install 'camoufox[geoip]' && python3 -m camoufox fetch
+```
+
 ## Workflow
 
 ### 1. Candidate Intake
