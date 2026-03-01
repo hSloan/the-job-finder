@@ -78,19 +78,18 @@ If all paths fail → Email candidate "Match" + apply link
 
 - **OpenClaw** with `web_search`, `web_fetch`, and `exec` tools enabled
 - **Python 3.11+**
-- **Camoufox** + **PDF generation deps** installed in the workspace venv:
+- **Camoufox** installed in the workspace venv:
   ```bash
   cd ~/.openclaw/workspace
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install 'camoufox[geoip]' fpdf2 markdown
+  pip install 'camoufox[geoip]'
   python3 -m camoufox fetch
   ```
-  - `fpdf2` — generates resume and cover letter PDFs from the tailored markdown content (replaces `reportlab`; lighter weight, no system dependencies)
-  - `markdown` — converts markdown-formatted resume/cover letter files to HTML as an intermediate step before PDF rendering
 - **`gotta-captcha` skill** — installed at `skills/gotta-captcha/`
 - **`im-accounted-for` skill** — installed at `skills/account-creator/`
-- **Credentials** — SMTP (email sending) and IMAP (account verification). See `references/credentials.md` for the full variable list and setup instructions — that is the single source of truth; do not configure credentials from README examples.
+- **SMTP credentials** for sending emails (configured in `TOOLS.md` or env vars)
+- **IMAP credentials** for `im-accounted-for` account verification (same email, env vars `IMAP_EMAIL` / `IMAP_PASS`)
 - **API keys** (optional) — Adzuna and USAJobs expand search coverage but aren't required
 
 ---
@@ -137,7 +136,6 @@ When a CAPTCHA appears, you'll see a handoff banner in the TUI and a browser win
 
 | File | Purpose |
 |------|---------|
-| `references/credentials.md` | **Single source of truth** for all env vars — SMTP, IMAP, storage paths |
 | `references/browser-automation.md` | Camoufox CLI usage, CAPTCHA handling, login wall handling |
 | `references/email-sending.md` | SMTP email sending instructions |
 | `references/job-apis.md` | Job board API integration details |
@@ -146,9 +144,8 @@ When a CAPTCHA appears, you'll see a handoff banner in the TUI and a browser win
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/camoufox_browser.py` | Anti-detect Firefox browser runner — navigate, fill forms, upload files |
-| `scripts/generate_resume_pdf.py` | Generates tailored resume/cover letter PDFs using `fpdf2` (replaces `reportlab`) |
-| `scripts/send_email.py` | Sends candidate notification emails with attachments via SMTP |
+| `scripts/generate_resume_pdf.py` | Generates tailored resume PDF from structured JSON |
+| `scripts/send_email.py` | Sends emails with attachments via SMTP |
 
 ---
 
