@@ -1,7 +1,80 @@
-# Browser Automation — Camoufox
+# Browser Automation
 
-Use Camoufox (anti-detect Firefox) for all job application browser automation.
-**Do NOT use the built-in `browser` tool for form filling** — it gets flagged by anti-bot systems.
+**NEVER use the built-in `browser` tool for job application form filling** — it gets flagged by anti-bot systems.
+
+## Routing: Scrapling vs Camoufox
+
+Use the right tool for the job:
+
+| Scenario | Tool | Why |
+|---|---|---|
+| Indeed, LinkedIn, ZipRecruiter, Glassdoor (Cloudflare-protected) | **Scrapling `StealthyFetcher`** | Fingerprint spoofing + Cloudflare Turnstile solver |
+| Wix / Squarespace / employer-hosted sites | **Scrapling `StealthyFetcher`** | Adaptive element tracking, auto-detects form fields |
+| CAPTCHA encountered mid-flow | **Camoufox** (headed) → **gotta-captcha** | Opens visible browser for human solve |
+| Any automation that Scrapling can't complete | **Camoufox** fallback | Full Playwright control, anti-detect Firefox |
+
+### Quick decision rule:
+1. **Try Scrapling first** (`scripts/scrapling_apply.py`)
+2. **If Scrapling hits a CAPTCHA** → call `skills/gotta-captcha/scripts/captcha_handoff.py` + retry with Camoufox headed
+3. **If site is completely broken in both** → escalate to Sloan via Discord
+
+---
+
+## Scrapling — `scrapling_apply.py` (primary)
+
+**Script:** `~/.openclaw/workspace/scripts/scrapling_apply.py`
+
+### Probe a URL (check reachability + Cloudflare status)
+```bash
+cd ~/.openclaw/workspace && source .venv/bin/activate && \
+python3 scripts/scrapling_apply.py probe "https://www.indeed.com/viewjob?jk=ba30920c919d43b8"
+```
+
+### Scrape form fields from a page (auto-detect inputs + buttons)
+```bash
+cd ~/.openclaw/workspace && source .venv/bin/activate && \
+python3 scripts/scrapling_apply.py scrape "https://example.com/apply"
+```
+
+### Fill + submit a form
+Create a JSON payload file (e.g. `/tmp/apply_payload.json`):
+```json
+{
+  "url": "https://example.com/apply",
+  "fields": {
+    "first_name": "Ashley",
+    "last_name": "Agata",
+    "email": "Alagata@icloud.com",
+    "phone": "(954) 849-1263",
+    "message": "Cover letter text here..."
+  },
+  "solve_cloudflare": true,
+  "screenshot_path": "/tmp/application_result.png",
+  "timeout": 60000
+}
+```
+Then run:
+```bash
+cd ~/.openclaw/workspace && source .venv/bin/activate && \
+python3 scripts/scrapling_apply.py fill --json /tmp/apply_payload.json
+```
+
+**Output:** JSON with `success` (bool), `fields_filled` (list), `errors` (list), `body_snippet`, `screenshot`.
+
+### Selector overrides (if auto-detect misses something)
+Add to the payload JSON:
+```json
+"selectors": {
+  "first_name": "#input_comp-mlstpcaf2",
+  "submit": "button[aria-label='Send']"
+}
+```
+
+---
+
+## Camoufox — `camoufox_browser.py` (fallback)
+
+Use Camoufox (anti-detect Firefox) when Scrapling fails or CAPTCHA handoff is needed.
 
 ## Setup
 
