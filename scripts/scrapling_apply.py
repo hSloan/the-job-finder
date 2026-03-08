@@ -162,6 +162,7 @@ def fill_and_submit(payload: dict) -> dict:
 
     def page_action(page: Page):
         page_ref["page"] = page
+        page_ref["initial_url"] = page.url
         time.sleep(2)  # let JS settle after Cloudflare solve
 
         # Auto-detect selectors, then apply overrides
@@ -216,9 +217,16 @@ def fill_and_submit(payload: dict) -> dict:
                 btn = page.locator(submit_sel).first
                 btn.scroll_into_view_if_needed(timeout=8000)
                 time.sleep(0.5)
+                url_before = page.url
                 btn.click()
                 log({"status": "submit_clicked"})
                 time.sleep(7)
+                # URL-change is a secondary success signal (redirect to confirmation page)
+                url_after = page.url
+                if url_after != url_before:
+                    result["url_changed"] = True
+                    result["final_url"] = url_after
+                    log({"status": "url_changed", "from": url_before, "to": url_after})
             except Exception as e:
                 result["errors"].append(f"submit: {str(e)[:100]}")
         else:
@@ -251,7 +259,10 @@ def fill_and_submit(payload: dict) -> dict:
             "we'll be in touch", "successfully", "application received",
             "application submitted",
         ]
-        result["success"] = any(kw in body_text.lower() for kw in success_keywords)
+        keyword_match = any(kw in body_text.lower() for kw in success_keywords)
+        # URL change to a different path is also a success signal (confirmation redirect)
+        url_changed = result.get("url_changed", False)
+        result["success"] = keyword_match or url_changed
 
     except Exception as e:
         result["errors"].append(f"fetch: {str(e)[:200]}")
@@ -262,6 +273,13 @@ def fill_and_submit(payload: dict) -> dict:
 def scrape_page(url: str, solve_cloudflare: bool = True, timeout: int = 45000) -> dict:
     """Scrape visible text and form info from a page."""
     from scrapling.fetchers import StealthyFetcher
+    from playwright.sync_api import Page
+
+    detected_selectors: dict = {}
+
+    def page_action(page: Page):
+        # Auto-detect selectors inside the Playwright context
+        detected_selectors.update(auto_detect_selectors(page))
 
     try:
         page = StealthyFetcher.fetch(
@@ -272,6 +290,7 @@ def scrape_page(url: str, solve_cloudflare: bool = True, timeout: int = 45000) -
             network_idle=False,
             load_dom=True,
             google_search=True,
+            page_action=page_action,
         )
         title = page.css("title::text").get() or ""
         # Find all form inputs
@@ -300,6 +319,7 @@ def scrape_page(url: str, solve_cloudflare: bool = True, timeout: int = 45000) -
             "title": title,
             "inputs": inputs,
             "buttons": buttons,
+            "detected_selectors": detected_selectors,  # auto-detected field → CSS selector mapping
             "url": url,
         }
     except Exception as e:
@@ -310,7 +330,7 @@ def main():
     parser.add_argument("command", choices=["probe", "fill", "scrape"])
     parser.add_argument("url", nargs="?", help="Target URL")
     parser.add_argument("--json", help="Path to JSON payload file (for 'fill')")
-    parser.add_argument("--solve-cloudflare", action="store_true", default=True)
+    parser.add_argument("--solve-cloudflare", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--timeout", type=int, default=60000)
     args = parser.parse_args()
 

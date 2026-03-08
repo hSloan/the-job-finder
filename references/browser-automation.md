@@ -70,6 +70,27 @@ Add to the payload JSON:
 }
 ```
 
+### ⚠️ Selector Format Differences: `scrape` vs `fill`
+
+**`scrape` uses Scrapling CSS syntax** (returned in `inputs[].name`, `inputs[].id`, etc.).
+**`fill` uses Playwright locator syntax** internally (`page.locator(sel)` inside `page_action`).
+
+These are _mostly_ compatible (standard CSS selectors work in both), but they differ in important ways:
+
+| Feature | Scrapling `scrape` | Playwright `fill` / `auto_detect_selectors` |
+|---|---|---|
+| Attribute selectors | `input[name="email"]` ✅ | `input[name="email"]` ✅ |
+| `:has-text("...")` | ❌ not supported | ✅ Playwright pseudo-class |
+| `>>` deep combinator | ❌ | ✅ Playwright only |
+| XPath | ❌ | ✅ via `xpath=...` prefix |
+| Role selectors | ❌ | ✅ `role=button[name="Submit"]` |
+
+**Rule of thumb:**
+- Use standard CSS attribute/id/class selectors — they work in both contexts.
+- If `scrape` returns a selector like `input#email`, use `input#email` in your `fill` payload — it works.
+- Avoid Playwright-only pseudo-classes (`:has-text`, `:visible`) in `selectors` overrides passed to `scrapling_apply.py fill` — they will only work if the selector is used inside `page_action` (which runs in a Playwright context). Auto-detected selectors from `auto_detect_selectors()` already use only standard CSS to stay compatible.
+- When in doubt, use `id` or `name` attribute selectors: they are unambiguous in both tools.
+
 ---
 
 ## Camoufox — `camoufox_browser.py` (fallback)
