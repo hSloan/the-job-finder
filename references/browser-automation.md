@@ -16,7 +16,7 @@ Use the right tool for the job:
 ### Quick decision rule:
 1. **Try Scrapling first** (`scripts/scrapling_apply.py`)
 2. **If Scrapling hits a CAPTCHA** → call `skills/gotta-captcha/scripts/captcha_handoff.py` + retry with Camoufox headed
-3. **If site is completely broken in both** → escalate to Sloan via Discord
+3. **If site is completely broken in both** → escalate to the human operator via Discord
 
 ---
 
@@ -42,10 +42,10 @@ Create a JSON payload file (e.g. `/tmp/apply_payload.json`):
 {
   "url": "https://example.com/apply",
   "fields": {
-    "first_name": "Ashley",
-    "last_name": "Agata",
-    "email": "Alagata@icloud.com",
-    "phone": "(954) 849-1263",
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "email": "jane.doe@example.com",
+    "phone": "(555) 123-4567",
     "message": "Cover letter text here..."
   },
   "solve_cloudflare": true,

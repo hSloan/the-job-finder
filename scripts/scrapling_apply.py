@@ -18,12 +18,12 @@ Payload (for 'fill') — JSON file or stdin:
   {
     "url": "https://...",
     "fields": {
-      "first_name": "Ashley",
-      "last_name": "Agata",
-      "email": "Alagata@icloud.com",
-      "phone": "(954) 849-1263",
+      "first_name": "Jane",
+      "last_name": "Doe",
+      "email": "jane.doe@example.com",
+      "phone": "(555) 123-4567",
       "message": "Cover letter text here...",
-      "resume_path": "/tmp/ashley_resume.pdf"   // optional, for file inputs
+      "resume_path": "/tmp/jane_resume.pdf"   // optional, for file inputs
     },
     "selectors": {            // optional overrides — auto-detected if omitted
       "first_name": "#input_first",
@@ -120,6 +120,9 @@ def auto_detect_selectors(page) -> dict:
             'button[type="submit"]', 'input[type="submit"]',
             'button[aria-label*="send" i]', 'button[aria-label*="submit" i]',
             'button[aria-label*="apply" i]',
+            # Note: the selectors below use Playwright-only pseudo-selectors (:has-text).
+            # This is intentional — auto_detect_selectors only runs inside page_action
+            # where a real Playwright Page object is available.
             'button:has-text("Submit")', 'button:has-text("Send")',
             'button:has-text("Apply")',
         ],

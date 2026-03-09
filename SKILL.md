@@ -35,7 +35,7 @@ on all major job sites.
 **Quick decision rule:**
 1. Use `scrapling_apply.py` first — probe the URL, scrape the form, fill and submit
 2. If Scrapling hits a CAPTCHA mid-flow → invoke `gotta-captcha` + retry with Camoufox headed
-3. If both fail completely → escalate to human (Sloan) via Discord
+3. If both fail completely → escalate to the human operator via Discord
 
 **Setup:**
 ```bash
