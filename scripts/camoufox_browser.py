@@ -146,12 +146,14 @@ def cmd_fill_form(args):
                     'button:has-text("Continue")',
                     'button:has-text("Next")',
                 ]:
-                    btn = page.locator(submit_sel).first
-                    if btn.count() > 0 and btn.is_visible():
-                        btn.click()
-                        human_delay(1000, 2000)
-                        submitted = True
-                        break
+                    btn_locator = page.locator(submit_sel)
+                    if btn_locator.count() > 0:
+                        btn = btn_locator.first
+                        if btn.is_visible():
+                            btn.click()
+                            human_delay(1000, 2000)
+                            submitted = True
+                            break
             except Exception as e:
                 pass
 
@@ -175,8 +177,12 @@ def cmd_upload_apply(args):
         # Try to find resume input — user can also explicitly pass 'file:#resume-input': path
         fields.setdefault("file:input[type='file']", args.resume)
     if args.cover_letter:
-        # If there's a second file input, use it for cover letter
-        # This is a heuristic — explicit selector in fields overrides
+        # Cover letters are NOT auto-detected. You must pass an explicit selector
+        # via the 'file:' prefix in --fields. Example:
+        #   --fields '{"file:input[name=\"cover-letter\"]": "/path/to/cover_letter.pdf"}'
+        # The --cover_letter argument is accepted for CLI convenience but has no effect
+        # unless you also supply the corresponding 'file:' selector in --fields.
+        # Without an explicit selector, the cover letter will not be uploaded.
         pass
 
     with Camoufox(headless=True) as browser:
@@ -198,12 +204,14 @@ def cmd_upload_apply(args):
                 'button:has-text("Apply Now")',
                 'button:has-text("Apply")',
             ]:
-                btn = page.locator(submit_sel).first
-                if btn.count() > 0 and btn.is_visible():
-                    btn.click()
-                    human_delay(1500, 3000)
-                    submitted = True
-                    break
+                btn_locator = page.locator(submit_sel)
+                if btn_locator.count() > 0:
+                    btn = btn_locator.first
+                    if btn.is_visible():
+                        btn.click()
+                        human_delay(1500, 3000)
+                        submitted = True
+                        break
         except Exception as e:
             pass
 

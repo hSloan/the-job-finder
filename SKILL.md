@@ -5,10 +5,10 @@ description: >
   Use when a human asks to find jobs, search for job listings, apply for jobs, tailor a resume,
   generate a cover letter, or automate their job hunt. Handles full pipeline: intake candidate
   info (name, email, phone, resume), search job boards, tailor resume to listings, generate
-  cover letters, applies directly when possible using Camoufox browser automation, and emails
-  results to the candidate. Integrates gotta-captcha for CAPTCHA handoff and im-accounted-for
-  for automatic account creation on login-wall sites — maximising the number of applications
-  submitted without human intervention.
+  cover letters, applies directly when possible using Scrapling StealthyFetcher (primary) or
+  Camoufox browser automation (fallback), and emails results to the candidate. Integrates
+  gotta-captcha for CAPTCHA handoff and im-accounted-for for automatic account creation on
+  login-wall sites — maximising the number of applications submitted without human intervention.
 ---
 
 # Job Finder
@@ -18,35 +18,45 @@ tailors resumes, generates cover letters, applies when possible, and emails the 
 
 ## Browser Stack — Mandatory Reading
 
-**Always use Camoufox for every browser interaction in this skill. No exceptions.**
+**Never use the built-in `browser` tool for job applications.** It is fingerprinted as a bot
+on all major job sites.
 
-The built-in `browser` tool uses Chromium and is fingerprinted as a bot by most modern job
-sites — resulting in blocked page loads, invisible form fields, broken uploads, and silent
-submission failures. Camoufox presents as a real, human Firefox browser at the C++ level
-and bypasses these protections reliably.
+### Routing: Scrapling (primary) → Camoufox (fallback)
 
 | Tool | Use for |
 |------|---------|
-| ✅ Camoufox (`camoufox_browser.py`) | All job site navigation, form filling, file uploads, DOM inspection |
-| ✅ `gotta-captcha` skill | Any CAPTCHA encountered during apply or account creation |
+| ✅ **Scrapling** (`scrapling_apply.py`) | **Primary** — all job sites. Bypasses Cloudflare Turnstile/Interstitial, adaptive element tracking, auto-detects form fields |
+| ✅ Camoufox (`camoufox_browser.py`) | **Fallback** — when Scrapling can't complete or CAPTCHA needs a human in a headed browser |
+| ✅ `gotta-captcha` skill | Any CAPTCHA encountered — switches to headed browser, notifies human, resumes |
 | ✅ `im-accounted-for` skill | Any login wall requiring account registration before applying |
 | ❌ Built-in `browser` tool | **Never** — flagged as bot on all major job sites |
 | ❌ `web_fetch` for apply flows | **Never** — cannot execute JS or maintain session state |
 
-**Setup (must be in place before any apply step):**
+**Quick decision rule:**
+1. Use `scrapling_apply.py` first — probe the URL, scrape the form, fill and submit
+2. If Scrapling hits a CAPTCHA mid-flow → invoke `gotta-captcha` + retry with Camoufox headed
+3. If both fail completely → escalate to the human operator via Discord
+
+**Setup:**
 ```bash
-# venv
+# Activate venv
 source ~/.openclaw/workspace/.venv/bin/activate
 
-# Camoufox runner
+# Scrapling (primary)
+python3 scripts/scrapling_apply.py probe "https://example.com"
+python3 scripts/scrapling_apply.py scrape "https://example.com/apply"
+python3 scripts/scrapling_apply.py fill --json /tmp/payload.json
+
+# Camoufox (fallback)
 python3 scripts/camoufox_browser.py <command>
 
 # Full reference
-cat ~/.openclaw/workspace/skills/job-finder/references/browser-automation.md
+cat references/browser-automation.md
 ```
 
-If the venv or Camoufox binary is missing, stop and install before proceeding:
+If `scrapling[all]` or Camoufox is missing:
 ```bash
+pip install 'scrapling[all]' && scrapling install
 pip install 'camoufox[geoip]' && python3 -m camoufox fetch
 ```
 
@@ -122,14 +132,15 @@ Cover letter guidelines:
 
 ### 5. Application Submission
 
-Use Camoufox (anti-detect Firefox) for all browser automation. See `references/browser-automation.md`
-for full usage. **Do not use the built-in `browser` tool** — it is flagged by anti-bot systems.
+Use Scrapling (`scrapling_apply.py`) as the primary browser tool. Fall back to Camoufox only if
+Scrapling fails or a CAPTCHA requires a headed browser. See `references/browser-automation.md`
+for full routing details. **Never use the built-in `browser` tool** — flagged as bot on all major job sites.
 
 #### 5a. Open Application — Submit Directly
 
-1. Navigate to the apply URL with Camoufox
-2. Inspect the form (capture DOM if needed)
-3. Fill candidate details (name, email, phone) and upload resume + cover letter
+1. `probe` the apply URL with Scrapling to confirm reachability and detect Cloudflare
+2. `scrape` the form to identify field selectors
+3. `fill` the form with candidate details (name, email, phone, cover letter) and upload resume if supported
 4. Screenshot the confirmation page as proof
 
 **If a CAPTCHA appears during form fill or submission:**

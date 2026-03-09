@@ -10,9 +10,9 @@ An OpenClaw skill that automates job searching, resume tailoring, cover letter g
 2. **Search** — Queries job board APIs (The Muse, RemoteOK, USAJobs, Adzuna) and falls back to web search (LinkedIn, Indeed, Glassdoor)
 3. **Tailor** — Rewords existing resume content to align with each job description — never fabricates experience
 4. **Cover Letter** — Generates a targeted cover letter when required by the listing
-5. **Apply** — Submits applications via Camoufox browser automation with a full escalation ladder:
-   - Direct form submission
-   - CAPTCHA? → `gotta-captcha` hands it off to the human, then resumes automatically
+5. **Apply** — Submits applications via Scrapling (primary) / Camoufox (fallback) browser automation with a full escalation ladder:
+   - Direct form submission (Scrapling `StealthyFetcher`)
+   - CAPTCHA? → `gotta-captcha` hands it off to the human, then resumes automatically (Camoufox)
    - Login wall? → `im-accounted-for` auto-creates and verifies an account, then continues
    - OAuth/SSO only? → Falls back to "Match" email as a last resort
 6. **Email** — Notifies the candidate of results:
@@ -23,9 +23,11 @@ An OpenClaw skill that automates job searching, resume tailoring, cover letter g
 
 ## Browser Stack
 
-**All browser automation uses [Camoufox](https://github.com/daijro/camoufox) — an anti-detect Firefox fork.** The built-in OpenClaw `browser` tool is not used for job applications; it is fingerprinted as a bot by modern job sites and results in blocked pages, broken forms, and silent failures.
+**Primary: [Scrapling](https://github.com/D4Vinci/Scrapling) `StealthyFetcher`** — used for all Cloudflare-protected and bot-detecting job sites (Indeed, LinkedIn, ZipRecruiter, Glassdoor, Wix/Squarespace). Adaptive element tracking, auto-detects form fields, built-in Cloudflare Turnstile solver.
 
-Camoufox spoofs browser fingerprints at the C++ level — device, OS, WebGL, WebRTC, fonts, screen size — and presents as a real Firefox user. This is required for reliable form submission across major job boards.
+**Fallback: [Camoufox](https://github.com/daijro/camoufox)** — anti-detect Firefox fork. Used when Scrapling hits a CAPTCHA that requires human interaction, or for sites where Scrapling cannot complete the flow alone. Camoufox spoofs browser fingerprints at the C++ level — device, OS, WebGL, WebRTC, fonts, screen size — and presents as a real Firefox user.
+
+The built-in OpenClaw `browser` tool is not used for job applications; it is fingerprinted as a bot by modern job sites and results in blocked pages, broken forms, and silent failures.
 
 ### Skill Dependencies
 
@@ -41,7 +43,7 @@ These skills are required for maximum application coverage. Without them, sites 
 ## Application Escalation Ladder
 
 ```
-Navigate to apply URL (Camoufox)
+Navigate to apply URL (Scrapling StealthyFetcher)
           │
    Form accessible?
   ┌───────┴────────┐
@@ -52,12 +54,13 @@ Navigate to apply URL (Camoufox)
   │                │
   └───────┬────────┘
           │
-    Fill form (Camoufox)
+    Fill form (Scrapling)
           │
       CAPTCHA?
   ┌────────┴────────┐
  No                Yes
   │                │
+  │      Switch to Camoufox +
   │          gotta-captcha
   │         (human solves,
   │          auto-resumes)
@@ -78,14 +81,17 @@ If all paths fail → Email candidate "Match" + apply link
 
 - **OpenClaw** with `web_search`, `web_fetch`, and `exec` tools enabled
 - **Python 3.11+**
-- **Camoufox** + **PDF generation deps** installed in the workspace venv:
+- **Scrapling**, **Camoufox**, + **PDF generation deps** installed in the workspace venv:
   ```bash
   cd ~/.openclaw/workspace
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install 'camoufox[geoip]' fpdf2 markdown
+  pip install 'scrapling[all]' 'camoufox[geoip]' fpdf2 markdown
   python3 -m camoufox fetch
+  scrapling install-browser
   ```
+  - `scrapling` — primary browser automation (Cloudflare/anti-bot bypass via `StealthyFetcher`)
+  - `camoufox` — fallback headed browser for CAPTCHA handoff
   - `fpdf2` — generates resume and cover letter PDFs from the tailored markdown content (replaces `reportlab`; lighter weight, no system dependencies)
   - `markdown` — converts markdown-formatted resume/cover letter files to HTML as an intermediate step before PDF rendering
 - **`gotta-captcha` skill** — installed at `skills/gotta-captcha/`
@@ -146,7 +152,8 @@ When a CAPTCHA appears, you'll see a handoff banner in the TUI and a browser win
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/camoufox_browser.py` | Anti-detect Firefox browser runner — navigate, fill forms, upload files |
+| `scripts/scrapling_apply.py` | **Primary** browser runner — Scrapling StealthyFetcher, Cloudflare bypass, auto-detect form fields |
+| `scripts/camoufox_browser.py` | **Fallback** browser runner — anti-detect Firefox, CAPTCHA handoff, file upload |
 | `scripts/generate_resume_pdf.py` | Generates tailored resume/cover letter PDFs using `fpdf2` (replaces `reportlab`) |
 | `scripts/send_email.py` | Sends candidate notification emails with attachments via SMTP |
 
