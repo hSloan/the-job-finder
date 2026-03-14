@@ -159,6 +159,30 @@ After successful submission, send email:
 - **Subject:** `Applied! | Job Finder Scoop: {job listing title}`
 - **Body:** Job description summary, company name, link to listing, tailored resume and cover letter attached
 
+### ATS Platform Routing
+
+Before touching any apply form, identify which ATS the site uses and follow the corresponding action:
+
+| Platform | Detection | Required Action |
+|----------|-----------|-----------------|
+| **iCIMS** | URL contains `icims.com` OR Step 1 of the form is "Create Profile" / "Build Your Profile" | **Invoke `im-accounted-for` FIRST** — iCIMS embeds account creation + email verification as Step 1 of the application itself. Never attempt to fill the form manually first. |
+| **Workday** | URL matches `*.wd1.myworkdayjobs.com`, `*.wd12.myworkdayjobs.com` | Apply directly — no account required |
+| **Taleo** | URL contains `taleo.net` | Apply directly |
+| **Lever** | URL contains `lever.co` | Apply directly |
+| **Greenhouse** | URL contains `boards.greenhouse.io` or `greenhouse.io` | Apply directly |
+| **iCIMS (employer-hosted)** | Page source contains `icims` or `iCIMS` branding | Same as iCIMS above — invoke `im-accounted-for` |
+
+**To detect ATS:** `scrapling_apply.py probe <url>` — check the response URL, page title, and form action attributes.
+
+### Retry Cap (MANDATORY)
+
+**Never attempt the same step more than 2 times.** On the 3rd failure:
+1. Document the blocker in `application_results.md` with timestamp and error detail
+2. Move to the next listing
+3. Do NOT loop — looping wastes time and burns tokens without new information
+
+This applies to every step: form fill, account creation, email verification, upload, submission.
+
 #### 5b. Hard Fallback — Match Only
 
 Only fall back to "Match" (no application) when all of the following fail:
@@ -197,8 +221,10 @@ Use the `exec` tool to send emails via the command line. Read `references/email-
 |---------|-----------|-------|
 | CAPTCHA on apply form | Open headed browser, notify human via TUI, wait for solve, resume | `gotta-captcha` |
 | Login wall (email registration) | Auto-register + IMAP self-verify, resume with session cookies | `im-accounted-for` |
+| iCIMS "Create Profile" Step 1 | **Same as login wall** — invoke `im-accounted-for` immediately; do not attempt manual form fill | `im-accounted-for` |
 | CAPTCHA on signup form | gotta-captcha handoff during account creation | `gotta-captcha` + `im-accounted-for` |
 | OAuth/SSO only (no email path) | Hard fallback → "Match" email with apply link | — |
 | Site fully broken / 404 | Note in results, skip, flag for URL refresh | — |
+| Stuck on same step after 2 attempts | Document blocker in `application_results.md`, move to next listing | — |
 
 Never mark a listing as "Match" until all applicable escalation steps have been attempted.
